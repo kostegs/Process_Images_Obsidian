@@ -1,19 +1,12 @@
 import re
 import shutil
 import os.path
+import sys
 from pathlib import Path
 from PIL import Image
 
-file_path = 'E:/Kostegs/Obsidian_Storage/Storage/Data/Визуализация данных.md'
-storage_path = Path(file_path).parents[1]
-file_name = Path(file_path).name
-print(file_name)
-processed_data_path = os.path.join(storage_path, 'ProcessedData')
-compressed_images_path = os.path.join(processed_data_path, 'img_new', '')
-
 
 def parse_image_names(source_file):
-    file_contents = ''
     try:
         with open(source_file, 'r', encoding='utf-8') as f:
             file_contents = f.read()
@@ -39,17 +32,14 @@ def parse_image_names(source_file):
     return finish_list, file_contents
 
 
-def check_folders_exist():
-    if not os.path.exists(processed_data_path):
-        os.makedirs(processed_data_path)
-    if not os.path.exists(compressed_images_path):
-        os.makedirs(compressed_images_path)
-    if not os.path.exists(compressed_images_path):
-        os.makedirs(compressed_images_path)
+def check_folder_exist(folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-def copy_source_file():
+
+def copy_source_file(original_file_path, processed_data_path, file_name):
     dest_path = os.path.join(processed_data_path, file_name)
-    shutil.copy(file_path, dest_path)
+    shutil.copy(original_file_path, dest_path)
     return dest_path
 
 
@@ -66,31 +56,40 @@ def compress_img(image_name, new_image_name, quality):
             # save the image
             img.save(new_filename, quality=quality, optimize=True)
 
-        print("[+] New file saved:", new_filename)
 
+def process_file(file_path, storage_for_site):
+    storage_path = Path(file_path).parents[1]
+    file_name = Path(file_path).name
+    processed_data_path = os.path.join(storage_for_site, 'Data')
+    compressed_images_path = os.path.join(storage_for_site, 'Images', '')
 
-if __name__ == '__main__':
-    check_folders_exist()
-    source_file = copy_source_file()
-    images, content = parse_image_names(source_file)
+    check_folder_exist(processed_data_path)
+    check_folder_exist(compressed_images_path)
+
+    dest_file = copy_source_file(file_path, processed_data_path, file_name)
+    images, content = parse_image_names(dest_file)
 
     origin_img_path = os.path.join(storage_path, 'Images', '')
+    pattern = r'!\[+img_name.+\]'
 
     for image in images:
         source_image = f'{origin_img_path}{image['Name']}'
         dest_image = f'{compressed_images_path}{image['NewName']}'
         compress_img(source_image, dest_image, 80)
+        current_pattern = pattern.replace('img_name', image['Name'])
+        print(current_pattern)
+        print(re.findall(current_pattern, content))
+        content = re.sub(current_pattern, f'![[{image['NewName']}.jpg]]', content)
 
-#TODO:
-# -add images unique name in the beginning
-# -skip using folder for old_files
-# -change image links in source database-file
-# -backup database file before changing
-# -get all paths from json with settings
-# -translate new image name from russian to english (if we need)
-# Копируем исходный файл, в папку /wp_post/filename
-# туда же в images кладем картинки, сжатые
-# меняем в исходном файле названия, открываем его в Wordpress, постим
-# отдельно скрипт, который чистит файл вместе с картинками
+    with open(dest_file, 'w', encoding='utf-8') as f:
+        f.write(content)
 
 
+if __name__ == '__main__':
+    # 2 arguments:
+    # -path to source file
+    # -path to storage for site
+    if len(sys.argv) > 2:
+        file_path = sys.argv[1]
+        storage_for_site = sys.argv[2]
+        process_file(file_path, storage_for_site)
