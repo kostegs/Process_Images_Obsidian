@@ -1,6 +1,5 @@
 import re
 import shutil
-import os.path
 import sys
 from pathlib import Path
 from PIL import Image
@@ -33,12 +32,12 @@ def parse_image_names(source_file):
 
 
 def check_folder_exist(folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    if not Path(folder).exists():
+        Path(folder).mkdir()
 
 
 def copy_source_file(original_file_path, processed_data_path, file_name):
-    dest_path = os.path.join(processed_data_path, file_name)
+    dest_path = Path(processed_data_path).joinpath(file_name)
     shutil.copy(original_file_path, dest_path)
     return dest_path
 
@@ -60,8 +59,8 @@ def compress_img(image_name, new_image_name, quality):
 def process_file(file_path, storage_for_site):
     storage_path = Path(file_path).parents[1]
     file_name = Path(file_path).name
-    processed_data_path = os.path.join(storage_for_site, 'Data')
-    compressed_images_path = os.path.join(storage_for_site, 'Images', '')
+    processed_data_path = Path(storage_for_site).joinpath('Data')
+    compressed_images_path = Path(storage_for_site).joinpath('Images')
 
     check_folder_exist(processed_data_path)
     check_folder_exist(compressed_images_path)
@@ -69,16 +68,14 @@ def process_file(file_path, storage_for_site):
     dest_file = copy_source_file(file_path, processed_data_path, file_name)
     images, content = parse_image_names(dest_file)
 
-    origin_img_path = os.path.join(storage_path, 'Images', '')
+    origin_img_path = Path(storage_path).joinpath('Images\\')
     pattern = r'!\[+img_name.+\]'
 
     for image in images:
-        source_image = f'{origin_img_path}{image['Name']}'
-        dest_image = f'{compressed_images_path}{image['NewName']}'
+        source_image = Path(origin_img_path).joinpath(image['Name'])
+        dest_image = Path(compressed_images_path).joinpath(image['NewName'])
         compress_img(source_image, dest_image, 80)
         current_pattern = pattern.replace('img_name', image['Name'])
-        print(current_pattern)
-        print(re.findall(current_pattern, content))
         content = re.sub(current_pattern, f'![[{image['NewName']}.jpg]]', content)
 
     with open(dest_file, 'w', encoding='utf-8') as f:
