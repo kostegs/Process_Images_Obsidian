@@ -11,7 +11,7 @@ def parse_image_names(source_file):
             file_contents = f.read()
     except Exception as e:
         print(f'Can\'t read the file, because: {e}')
-        return []
+        return [], ''
 
     # find all items like ![[Pasted image 20240711090319.png|Timeline_AutoPlay]]
     # or ![[Pasted image 20240711090319.png|Timeline_AutoPlay|400]]
@@ -42,10 +42,10 @@ def copy_source_file(original_file_path, processed_data_path, file_name):
     return dest_path
 
 
-def compress_img(image_name, new_image_name, quality):
-    with Image.open(image_name, 'r') as img:
+def compress_img(original_img_path, compressed_image_path, quality):
+    with Image.open(original_img_path, 'r') as img:
         # new extension is JPEG
-        new_filename = f"{new_image_name}.jpg"
+        new_filename = f"{compressed_image_path}.jpg"
 
         try:
             img.save(new_filename, quality=quality, optimize=True)
