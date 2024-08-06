@@ -57,7 +57,7 @@ def compress_img(image_name, new_image_name, quality):
 
 
 def process_file(file_path, storage_for_site):
-    storage_path = Path(file_path).parents[1]
+    storage_path = Path(file_path).parent.parent
     file_name = Path(file_path).name
     processed_data_path = Path(storage_for_site).joinpath('Data')
     compressed_images_path = Path(storage_for_site).joinpath('Images')
@@ -68,7 +68,7 @@ def process_file(file_path, storage_for_site):
     dest_file = copy_source_file(file_path, processed_data_path, file_name)
     images, content = parse_image_names(dest_file)
 
-    origin_img_path = Path(storage_path).joinpath('Images\\')
+    origin_img_path = Path(storage_path).joinpath('Images')
     pattern = r'!\[+img_name.+\]'
 
     for image in images:
